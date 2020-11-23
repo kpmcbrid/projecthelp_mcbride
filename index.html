@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Geological Map</title>
+
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+        integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+        crossorigin=""/>
+
+        <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+        integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+        crossorigin=""></script>
+
+        <style type="text/css">
+  html, body { margin: 0; padding: 0; height: 100%; }
+  #map { min-height: 100%; }
+</style>
+
+<script type="text/javascript" src="geodata.js"></script>
+
+
+<style>
+/* Optional: adjust the values below to change the appearance of the legend */
+.legend {
+padding: 6px 8px;
+line-height: 18px;
+background: rgba(255,255,255,0.9);
+box-shadow: 0 0 15px rgba(0,0,0,0.2);
+border-radius: 5px;
+}
+
+/* Optional: adjust the values below to change the appearance of the legend color boxes */
+.legend i {
+width: 18px;
+height: 18px;
+float: left;
+margin-right: 8px;
+opacity: 0.6;
+}
+</style>
+<link rel="icon" href="rock.jpg" >
+    </head>
+
+    <body>
+      <h2 style=
+            "text-align:center;
+            background-color:'black';
+            margin:0px">
+          Florida Geological Rock Units and Age
+      </h2>
+        <div id="map"></div>
+
+        <script type="text/javascript">
+
+          var map = L.map('map', {
+              center: [28.0770666,-84.0577429],
+              zoom: 7.25
+          });
+
+         var canvas = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
+   attribution: 'Map tiles by Carto, under CC BY 3.0. Data by OpenStreetMap, under ODbL.',
+   maxZoom: 11,
+   minZoom: 5
+ }).addTo(map);
+
+ var imagery = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+   attribution: 'Map data © OpenStreetMap contributors, CC-BY-SA, Imagery © Mapbox',
+   maxZoom: 11,
+   minZoom: 5,
+   id: 'mapbox.satellite',
+   accessToken:'pk.eyJ1IjoibmVpdWdpcyIsImEiOiJja2U4eHIwN24xdThsMnRwb280dTVjOHcyIn0.3d0a_UQDHkYfD-khd8FGig'
+ });
+ var terrain = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+   attribution: 'Map data © OpenStreetMap contributors, CC-BY-SA, Imagery © Mapbox',
+   maxZoom: 11,
+   minZoom: 5,
+   id: 'mapbox.mapbox-terrain-v2',
+   accessToken:'pk.eyJ1IjoibmVpdWdpcyIsImEiOiJja2U4eHIwN24xdThsMnRwb280dTVjOHcyIn0.3d0a_UQDHkYfD-khd8FGig'
+  });
+  var streets = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+    attribution: 'Map data © OpenStreetMap contributors, CC-BY-SA, Imagery © Mapbox',
+    maxZoom: 11,
+    minZoom: 5,
+    id: 'mapbox.mapbox-streets-v8',
+    accessToken:'pk.eyJ1IjoibmVpdWdpcyIsImEiOiJja2U4eHIwN24xdThsMnRwb280dTVjOHcyIn0.3d0a_UQDHkYfD-khd8FGig'
+   });
+</script>
+<script>
+ function getColor(value) {
+    return value == "alluvium" ? '#993404':
+           value == "beach sand"  ? '#ffffb2':
+           value == "calcarenite"  ? 'rgba(154, 206, 254)':
+           value == "clay or mud"  ? 'rgba(255, 219, 103)':
+           value == "claystone"  ? 'rgba(213, 230, 204)':
+           value == "delta"  ?    'rgba(255, 250, 200)':
+           value == "dolostone (dolomite)" ? 'rgba(107, 195, 255)':
+           value == "dune sand" ? 'green':
+           value == "limestone" ? 'rgba(67, 175, 249)':
+           value == "mixed clastics/carbonates" ? 'rgba(86, 224, 252)':
+           value == "sand" ? 'rgba(255, 203, 35)':
+           value == "sandstone" ? 'rgba(205, 255, 217)':
+                                'grey';
+                              }
+
+
+function style(feature){
+return {
+fillColor: getColor(feature.properties.ROCKTYPE1),   // pop_den is the field name for the population density data
+weight: 1,
+opacity: 1,
+color: 'black',
+fillOpacity: 0.9,
+
+};
+}
+var geology = L.geoJson(geodata, {style:style}).addTo(map);
+
+var legend = L.control({position: 'bottomright'}); // Try the other three corners if you like.
+
+legend.onAdd = function (map) {
+
+    var div = L.DomUtil.create('div', 'legend'),
+        grades = ["alluvium", "beach sand", "calcarenite", "clay or mud", "claystone", "delta", "dolostone (dolomite)", "dune sand", "limestone", "mixed clastics/carbonates","sand","sandstone"]; // The break values to define the intervals of population, note we begin from 0 here
+
+    div.innerHTML = '<b>Geologic Units<br> In Florida <br></b>'; // The legend title (HTML-based), in this case it's Population Density 2011
+
+    // Loop through our the classes and generate a label with a color box for each interval.
+    // If you are creating a choropleth map, you DO NOT need to change lines below.
+    for (var i = 0; i < grades.length; i++) {
+        div.innerHTML +=
+        '<i style="background:' + getColor(grades[i] ) + '"></i>' +
+        grades[i] + '<br>';
+    }
+
+    return div;
+};
+</script>
+<script>
+function getColor(value) {
+   return value == "Eocene" ? '#993404':
+          value == "Holocene"  ? '#ffffb2':
+          value == "Miocene"  ? 'rgba(154, 206, 254)':
+          value == "Miocene/Pliocene"  ? 'rgba(255, 219, 103)':
+          value == "Oligocene"  ? 'rgba(213, 230, 204)':
+          value == "Oligocene/Miocene"  ?    'rgba(255, 250, 200)':
+          value == "Pleistocene" ? 'rgba(107, 195, 255)':
+          value == "Pleistocene/Holocene" ? 'green':
+          value == "Pliocene" ? 'rgba(67, 175, 249)':
+          value == "Pliocene/Pleistocence" ? 'rgba(86, 224, 252)':
+                               'grey';
+                             }
+
+
+function style(feature){
+return {
+fillColor: getColor(feature.properties.UNIT_AGE),   // pop_den is the field name for the population density data
+weight: 1,
+opacity: 1,
+color: 'black',
+fillOpacity: 0.9,
+
+};
+}
+var time = L.geoJson(geodata, {style:style}).addTo(map);
+
+var legend = L.control({position: 'bottomright'}); // Try the other three corners if you like.
+
+legend.onAdd = function (map) {
+
+   var div = L.DomUtil.create('div', 'legend'),
+       grades = ["Eocene", "Holocene", "Miocene", "Miocene/Pliocene", "Oligocene", "Oligocene/Miocene", "Pleistocene", "Pleistocene/Holocene", "Pliocene", "Pliocene/Pleistocence"]; // The break values to define the intervals of population, note we begin from 0 here
+
+   div.innerHTML = '<b>Geologic Epoch<br> for Rock Units <br></b>'; // The legend title (HTML-based), in this case it's Population Density 2011
+
+   // Loop through our the classes and generate a label with a color box for each interval.
+   // If you are creating a choropleth map, you DO NOT need to change lines below.
+   for (var i = 0; i < grades.length; i++) {
+       div.innerHTML +=
+       '<i style="background:' + getColor(grades[i] ) + '"></i>' +
+       grades[i] + '<br>';
+   }
+
+   return div;
+};
+</script>
+
+<script>
+
+legend.addTo(map);
+
+var basemaps = {
+    "Light Canvas": canvas,
+    "Satellite Imagery": imagery,
+    "Terrain Map": terrain,
+    "Streets Map": streets
+};
+
+var overlaymaps = {
+    "Geological Units": geology,
+    "Geologic Epoch": time
+};
+L.control.layers(basemaps, overlaymaps).addTo(map);
+
+// Removing the legend when the layer is removed
+map.on('overlayremove', function(eventLayer){
+  if (eventLayer.name == 'Geological Units'){ // We use the key/display name to refer to the layer
+    map.removeControl(legend); // legend is the variable name of the layer legend
+  }
+});
+
+// Adding the legend when the layer is added
+map.on('overlayadd', function(eventLayer){
+  if (eventLayer.name == 'Geological Units'){
+    legend.addTo(map);
+  }
+  });
+  // Removing the legend when the layer is removed
+  map.on('overlayremove', function(eventLayer){
+    if (eventLayer.name == 'Geologic Epoch'){ // We use the key/display name to refer to the layer
+      map.removeControl(legend1); // legend is the variable name of the layer legend
+    }
+  });
+
+  // Adding the legend when the layer is added
+  map.on('overlayadd', function(eventLayer){
+    if (eventLayer.name == 'Geologic Epoch'){
+      legend.addTo(map);
+    }
+  });
+
+      </script>
+
+      <script>
+
+      </script>
+   </body>
+</html>
